@@ -2,7 +2,8 @@ name: SevenRooms Watcher Automation
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    # يعمل كل 8 دقائق
+    - cron: '*/8 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -27,5 +28,5 @@ jobs:
       env:
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        ACTIONS_NODE_OPTION: "" # يلغي التحذيرات الخاصة بـ Node
+        ACTIONS_NODE_OPTION: ""
       run: python sevenrooms_watcher.py
