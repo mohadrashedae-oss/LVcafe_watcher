@@ -11,10 +11,12 @@ PARTY_SIZE = 3
 START_DATE = "2026-08-11"
 END_DATE = "2026-08-18"
 
-def send_telegram(message):
+def send_telegram(message, target_chat_id=None):
+    if not target_chat_id:
+        target_chat_id = CHAT_ID
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
-        "chat_id": CHAT_ID,
+        "chat_id": target_chat_id,
         "text": message,
         "parse_mode": "Markdown",
         "disable_web_page_preview": True
@@ -24,7 +26,32 @@ def send_telegram(message):
     except Exception as e:
         print(f"فشل إرسال رسالة تيليجرام: {e}")
 
+def handle_incoming_messages():
+    """التحقق من الرسائل الجديدة والرد التلقائي بالترحيب عند ضغط /start"""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
+    try:
+        response = requests.get(url, timeout=10).json()
+        if response.get("ok"):
+            for result in response.get("result", []):
+                message = result.get("message", {})
+                text = message.get("text", "")
+                user_chat_id = message.get("chat", {}).get("id")
+
+                # إذا أرسل المستخدم /start
+                if text == "/start" and user_chat_id:
+                    welcome_msg = (
+                        "✨ 👜 **مرحباً بكم في بوت البحث عن حجوزات كافيه LV بانكوك!** ☕️🇹🇭\n\n"
+                        "🤖 تم تفعيل المراقبة التلقائية بنجاح!\n"
+                        "سيصلك إشعار دوري كل 8 دقائق للطتمئنة، وتنبيه فوري فور توفر أي حجز بين **11 و18 أغسطس**! 🗓️🚨"
+                    )
+                    send_telegram(welcome_msg, target_chat_id=user_chat_id)
+    except Exception as e:
+        print(f"لم يتم معالجة الرسائل الواردة: {e}")
+
 def check_availability():
+    # معالجة الرسائل والرد بالترحيب أولاً
+    handle_incoming_messages()
+
     # رابط API الخاص بـ SevenRooms
     url = f"https://www.sevenrooms.com/api-yoog/availability/widget/range?venue={VENUE_SLUG}&party_size={PARTY_SIZE}&start_date={START_DATE}&end_date={END_DATE}"
     
@@ -52,7 +79,7 @@ def check_availability():
 
         # في حال توفر موعد -> تنبيه حجز فوري 🚨
         if available_slots:
-            msg = f"🚨 **تنبيه توفر مواعيد في Le Café Louis Vuitton!**\n\n"
+            msg = f"🚨 **تنبيه توفر مواعيد في Le Café Louis Vuitton بانكوك!** 🇹🇭\n\n"
             msg += f"👥 **عدد الأشخاص:** {PARTY_SIZE}\n\n"
             msg += "\n".join(available_slots)
             msg += f"\n\n🔗 [اضغط هنا للحجز الفوري](https://www.sevenrooms.com/reservations/{VENUE_SLUG})"
