@@ -26,31 +26,35 @@ def send_telegram(message, target_chat_id=None):
     except Exception as e:
         print(f"فشل إرسال رسالة تيليجرام: {e}")
 
-def handle_incoming_messages():
-    """التحقق من الرسائل الجديدة والرد التلقائي بالترحيب عند ضغط /start"""
+def process_start_command():
+    """التحقق مما إذا كان المستخدم قد أرسل /start والرد عليه بالتأكيد"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
     try:
         response = requests.get(url, timeout=10).json()
         if response.get("ok"):
-            for result in response.get("result", []):
+            results = response.get("result", [])
+            for result in results:
                 message = result.get("message", {})
                 text = message.get("text", "")
                 user_chat_id = message.get("chat", {}).get("id")
 
-                # إذا أرسل المستخدم /start
+                # عند الضغط على /start
                 if text == "/start" and user_chat_id:
                     welcome_msg = (
-                        "✨ 👜 **مرحباً بكم في بوت البحث عن حجوزات كافيه LV بانكوك!** ☕️🇹🇭\n\n"
-                        "🤖 تم تفعيل المراقبة التلقائية بنجاح!\n"
-                        "سيصلك إشعار دوري كل 8 دقائق للطتمئنة، وتنبيه فوري فور توفر أي حجز بين **11 و18 أغسطس**! 🗓️🚨"
+                        "🟢 **البوت يعمل بنجاح!**\n\n"
+                        "تم تفعيل المراقبة، وسيتم إشعارك فوراً في حال توفر أي حجز خلال الفترة من **11 إلى 18 أغسطس**! ☕️👜✨"
                     )
                     send_telegram(welcome_msg, target_chat_id=user_chat_id)
+                    
+                    # مسح التحديثات المعالجة لكي لا تتكرر الرسالة في كل فحص
+                    update_id = result.get("update_id")
+                    requests.get(f"{url}?offset={update_id + 1}", timeout=5)
     except Exception as e:
-        print(f"لم يتم معالجة الرسائل الواردة: {e}")
+        print(f"خطأ أثناء فحص أمر الترحيب: {e}")
 
 def check_availability():
-    # معالجة الرسائل والرد بالترحيب أولاً
-    handle_incoming_messages()
+    # التحقق من أمر /start والرد أولاً
+    process_start_command()
 
     # رابط API الخاص بـ SevenRooms
     url = f"https://www.sevenrooms.com/api-yoog/availability/widget/range?venue={VENUE_SLUG}&party_size={PARTY_SIZE}&start_date={START_DATE}&end_date={END_DATE}"
@@ -86,7 +90,7 @@ def check_availability():
             send_telegram(msg)
             print("✅ تم العثور على مواعيد وإرسال التنبيه!")
 
-        # في حال عدم توفر موعد -> إشعار طمأنة 🙂
+        # في حال عدم توفر موعد -> إشعار طمأنة دوري 🙂
         else:
             status_msg = "لا تحاتي الغالي قاعدين ندور لك حجز 🙂"
             send_telegram(status_msg)
