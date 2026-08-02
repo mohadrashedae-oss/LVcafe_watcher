@@ -26,8 +26,8 @@ def send_telegram(message, target_chat_id=None):
     except Exception as e:
         print(f"فشل إرسال رسالة تيليجرام: {e}")
 
-def process_start_command():
-    """التحقق مما إذا كان المستخدم قد أرسل /start والرد عليه بالتأكيد"""
+def check_for_start_command():
+    """قراءة كل الرسائل المعلقة والرد فوراً على أي شخص أرسل /start"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
     try:
         response = requests.get(url, timeout=10).json()
@@ -37,26 +37,26 @@ def process_start_command():
                 message = result.get("message", {})
                 text = message.get("text", "")
                 user_chat_id = message.get("chat", {}).get("id")
+                update_id = result.get("update_id")
 
-                # عند الضغط على /start
-                if text == "/start" and user_chat_id:
+                # التحقق من أمر /start
+                if text and "/start" in text and user_chat_id:
                     welcome_msg = (
                         "🟢 **البوت يعمل بنجاح!**\n\n"
                         "تم تفعيل المراقبة، وسيتم إشعارك فوراً في حال توفر أي حجز خلال الفترة من **11 إلى 18 أغسطس**! ☕️👜✨"
                     )
                     send_telegram(welcome_msg, target_chat_id=user_chat_id)
-                    
-                    # مسح التحديثات المعالجة لكي لا تتكرر الرسالة في كل فحص
-                    update_id = result.get("update_id")
-                    requests.get(f"{url}?offset={update_id + 1}", timeout=5)
+                
+                # تأكيد معالجة الرسالة حتى لا تتكرر
+                requests.get(f"{url}?offset={update_id + 1}", timeout=5)
     except Exception as e:
-        print(f"خطأ أثناء فحص أمر الترحيب: {e}")
+        print(f"خطأ أثناء قراءة الرسائل الواردة: {e}")
 
 def check_availability():
-    # التحقق من أمر /start والرد أولاً
-    process_start_command()
+    # 1. الرد على أي شخص أرسل /start مؤخراً
+    check_for_start_command()
 
-    # رابط API الخاص بـ SevenRooms
+    # 2. رابط API الخاص بـ SevenRooms
     url = f"https://www.sevenrooms.com/api-yoog/availability/widget/range?venue={VENUE_SLUG}&party_size={PARTY_SIZE}&start_date={START_DATE}&end_date={END_DATE}"
     
     headers = {
