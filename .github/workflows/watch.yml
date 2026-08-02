@@ -2,9 +2,8 @@ name: SevenRooms Watcher Automation
 
 on:
   schedule:
-    # يعمل كل 10 دقائق (تفادياً لاستنزاف دقائق GitHub المجانية بسرعة)
     - cron: '*/10 * * * *'
-  workflow_dispatch: # يتيح لك التشغيل اليدوي للتجربة في أي وقت
+  workflow_dispatch:
 
 jobs:
   check:
@@ -12,10 +11,10 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.2.2
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v5.4.0
       with:
         python-version: '3.11'
 
